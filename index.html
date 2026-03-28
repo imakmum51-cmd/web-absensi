@@ -36,8 +36,6 @@
         .nav-link { margin-top: 20px; }
         .nav-link a { color: #4a90d9; text-decoration: none; font-weight: 600; }
         .nav-link a:hover { text-decoration: underline; }
-
-        /* Mode absen (ketika dibuka dari QR) */
         .absen-card {
             background: #fff;
             padding: 30px;
@@ -84,19 +82,20 @@
     </div>
 
     <script>
-        // Cek apakah halaman dibuka dari QR code (ada parameter di URL)
+        // Cek parameter dari URL - support format singkat (n,i,j) dan panjang (nama,nip,jabatan)
         var params = new URLSearchParams(window.location.search);
-        var nama = params.get('nama');
-        var nip = params.get('nip');
-        var jabatan = params.get('jabatan');
+        var nama = params.get('n') || params.get('nama');
+        var nip = params.get('i') || params.get('nip');
+        var jabatan = params.get('j') || params.get('jabatan') || '-';
 
         if (nama && nip) {
-            // Mode Absen - dibuka dari QR code
+            // Mode Absen
             document.getElementById('scanner-mode').style.display = 'none';
-            document.getElementById('absen-mode').style.display = 'flex';
-            document.getElementById('absen-mode').style.flexDirection = 'column';
-            document.getElementById('absen-mode').style.alignItems = 'center';
-            document.getElementById('absen-mode').style.gap = '20px';
+            var absenMode = document.getElementById('absen-mode');
+            absenMode.style.display = 'flex';
+            absenMode.style.flexDirection = 'column';
+            absenMode.style.alignItems = 'center';
+            absenMode.style.gap = '20px';
 
             var now = new Date();
             var waktu = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
@@ -105,7 +104,7 @@
             document.getElementById('absen-detail').innerHTML =
                 '<strong>Nama:</strong> ' + decodeURIComponent(nama) + '<br>' +
                 '<strong>NIP:</strong> ' + decodeURIComponent(nip) + '<br>' +
-                (jabatan ? '<strong>Jabatan:</strong> ' + decodeURIComponent(jabatan) + '<br>' : '') +
+                '<strong>Jabatan:</strong> ' + decodeURIComponent(jabatan) + '<br>' +
                 '<strong>Waktu:</strong> ' + waktu;
 
             document.getElementById('absen-waktu').innerText = 'Tercatat pada: ' + waktu;
@@ -113,50 +112,47 @@
             // Mode Scanner
             var sudahScan = false;
 
-            function onScanSuccess(decodedText, decodedResult) {
-                if (sudahScan) return;
-                sudahScan = true;
-
-                var data = null;
-                var resultBox = document.getElementById('result-box');
-                var output = document.getElementById('output');
-
-                // Coba parse sebagai URL dengan parameter
+            function parseQRData(decodedText) {
+                // Coba parse sebagai URL
                 try {
                     var url = new URL(decodedText);
                     var p = url.searchParams;
-                    if (p.get('nama') && p.get('nip')) {
-                        data = {
-                            nama: p.get('nama'),
-                            nip: p.get('nip'),
-                            jabatan: p.get('jabatan') || '-'
-                        };
+                    var n = p.get('n') || p.get('nama');
+                    var i = p.get('i') || p.get('nip');
+                    if (n && i) {
+                        return { nama: n, nip: i, jabatan: p.get('j') || p.get('jabatan') || '-' };
                     }
                 } catch(e) {}
+                // Coba parse sebagai JSON
+                try {
+                    var d = JSON.parse(decodedText);
+                    if (d.nama && (d.nip || d.id)) return { nama: d.nama, nip: d.nip || d.id, jabatan: d.jabatan || '-' };
+                } catch(e) {}
+                return null;
+            }
 
-                // Kalau bukan URL, coba parse sebagai JSON
-                if (!data) {
-                    try {
-                        data = JSON.parse(decodedText);
-                    } catch(e) {}
-                }
+            function onScanSuccess(decodedText) {
+                if (sudahScan) return;
+                sudahScan = true;
 
-                if (data && data.nama && data.nip) {
-                    var now = new Date();
-                    var waktu = now.toLocaleTimeString('id-ID');
+                var resultBox = document.getElementById('result-box');
+                var output = document.getElementById('output');
+                var data = parseQRData(decodedText);
+
+                if (data) {
+                    var waktu = new Date().toLocaleTimeString('id-ID');
                     resultBox.classList.add('sukses');
                     output.innerHTML =
                         '<div class="result-detail">' +
                         '<strong>Nama:</strong> ' + data.nama + '<br>' +
                         '<strong>NIP:</strong> ' + data.nip + '<br>' +
-                        '<strong>Jabatan:</strong> ' + (data.jabatan || '-') + '<br>' +
+                        '<strong>Jabatan:</strong> ' + data.jabatan + '<br>' +
                         '<strong>Waktu:</strong> ' + waktu +
                         '</div>';
                 } else {
                     output.innerText = 'Data: ' + decodedText;
                 }
 
-                // Reset setelah 5 detik agar bisa scan lagi
                 setTimeout(function() {
                     sudahScan = false;
                     resultBox.classList.remove('sukses');
@@ -168,10 +164,13 @@
 
             var html5QrcodeScanner = new Html5QrcodeScanner(
                 "reader", {
-                    fps: 15,
-                    qrbox: { width: 200, height: 200 },
+                    fps: 10,
+                    qrbox: { width: 180, height: 180 },
                     rememberLastUsedCamera: true,
-                    showTorchButtonIfSupported: true
+                    supportedScanTypes: [
+                        Html5QrcodeScanType.SCAN_TYPE_CAMERA,
+                        Html5QrcodeScanType.SCAN_TYPE_FILE
+                    ]
                 });
             html5QrcodeScanner.render(onScanSuccess, onScanFailure);
         }

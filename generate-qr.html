@@ -144,11 +144,11 @@
                 return;
             }
 
-            // Buat URL ke halaman index.html dengan parameter
+            // Buat URL singkat ke halaman index.html
             var baseUrl = getBaseUrl();
-            var absenUrl = baseUrl + 'index.html?nama=' + encodeURIComponent(nama)
-                + '&nip=' + encodeURIComponent(nip)
-                + '&jabatan=' + encodeURIComponent(jabatan);
+            var absenUrl = baseUrl + 'index.html?n=' + encodeURIComponent(nama)
+                + '&i=' + encodeURIComponent(nip)
+                + '&j=' + encodeURIComponent(jabatan);
 
             var qrcodeDiv = document.getElementById('qrcode');
             var container = document.getElementById('qrcode-container');

@@ -76,9 +76,9 @@
         var loc = window.location;
         var basePath = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
         var baseUrl = loc.protocol + '//' + loc.host + basePath;
-        var absenUrl = baseUrl + 'index.html?nama=' + encodeURIComponent(nama)
-            + '&nip=' + encodeURIComponent(nip)
-            + '&jabatan=' + encodeURIComponent(jabatan);
+        var absenUrl = baseUrl + 'index.html?n=' + encodeURIComponent(nama)
+            + '&i=' + encodeURIComponent(nip)
+            + '&j=' + encodeURIComponent(jabatan);
 
         document.getElementById('qr-url').innerText = 'URL: ' + absenUrl;
 
