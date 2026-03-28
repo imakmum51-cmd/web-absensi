@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code - Imam Dzaki Ramadhan</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: #f4f4f9;
+        }
+        .card {
+            background: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        h2 { color: #333; margin-bottom: 5px; }
+        .info { color: #777; margin-bottom: 20px; font-size: 14px; }
+        #qrcode {
+            display: inline-block;
+            padding: 15px;
+            border: 2px solid #eee;
+            border-radius: 10px;
+        }
+        .detail { margin-top: 15px; text-align: left; background: #f0f7ff; padding: 12px 18px; border-radius: 8px; font-size: 14px; line-height: 1.8; }
+        .qr-url { margin-top: 8px; padding: 8px; background: #e8f5e9; border-radius: 6px; font-size: 11px; color: #2e7d32; word-break: break-all; }
+        button {
+            margin-top: 18px;
+            padding: 12px 30px;
+            background: #27ae60;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        button:hover { background: #1e8c4c; }
+        .nav-link { margin-top: 15px; }
+        .nav-link a { color: #4a90d9; text-decoration: none; font-weight: 600; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>QR Code Absensi</h2>
+        <p class="info">Scan QR ini untuk absensi</p>
+        <div id="qrcode"></div>
+        <div class="detail">
+            <strong>Nama:</strong> Imam Dzaki Ramadhan<br>
+            <strong>ID Karyawan:</strong> 1111<br>
+            <strong>Jabatan:</strong> SPV
+        </div>
+        <div class="qr-url" id="qr-url"></div>
+        <button onclick="downloadQR()">Download QR Code</button>
+        <div class="nav-link">
+            <a href="index.html">Ke Scanner</a> | <a href="generate-qr.html">Generate QR Baru</a>
+        </div>
+    </div>
+
+    <script>
+        // Data karyawan
+        var nama = "Imam Dzaki Ramadhan";
+        var nip = "1111";
+        var jabatan = "SPV";
+
+        // Buat URL absensi
+        var loc = window.location;
+        var basePath = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
+        var baseUrl = loc.protocol + '//' + loc.host + basePath;
+        var absenUrl = baseUrl + 'index.html?nama=' + encodeURIComponent(nama)
+            + '&nip=' + encodeURIComponent(nip)
+            + '&jabatan=' + encodeURIComponent(jabatan);
+
+        document.getElementById('qr-url').innerText = 'URL: ' + absenUrl;
+
+        // Generate QR code
+        var qrcode = new QRCode(document.getElementById('qrcode'), {
+            text: absenUrl,
+            width: 256,
+            height: 256,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+
+        function downloadQR() {
+            var canvas = document.querySelector('#qrcode canvas');
+            if (canvas) {
+                var link = document.createElement('a');
+                link.download = 'qr-absensi-imam-dzaki-1111.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            }
+        }
+    </script>
+</body>
+</html>

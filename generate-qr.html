@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate QR Code Absensi</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: #f4f4f9;
+            padding: 20px;
+        }
+        .container {
+            background: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+        }
+        h2 { color: #333; margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; text-align: left; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
+        input, select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+        input:focus, select:focus { outline: none; border-color: #4a90d9; }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #4a90d9;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 10px;
+        }
+        button:hover { background: #357abd; }
+        #qrcode-container { margin-top: 25px; display: none; }
+        #qrcode {
+            display: inline-block;
+            padding: 15px;
+            background: #fff;
+            border: 2px solid #eee;
+            border-radius: 10px;
+        }
+        .qr-info {
+            margin-top: 12px;
+            padding: 10px;
+            background: #f0f7ff;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #555;
+            word-break: break-all;
+        }
+        .qr-url {
+            margin-top: 8px;
+            padding: 8px;
+            background: #e8f5e9;
+            border-radius: 6px;
+            font-size: 11px;
+            color: #2e7d32;
+            word-break: break-all;
+        }
+        .btn-download { background: #27ae60; margin-top: 12px; }
+        .btn-download:hover { background: #1e8c4c; }
+        .nav-link { margin-top: 20px; }
+        .nav-link a { color: #4a90d9; text-decoration: none; font-weight: 600; }
+        .nav-link a:hover { text-decoration: underline; }
+        .help-text { font-size: 12px; color: #999; margin-top: 15px; line-height: 1.6; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Generate QR Code Absensi</h2>
+
+        <div class="form-group">
+            <label for="nama">Nama Lengkap</label>
+            <input type="text" id="nama" placeholder="Masukkan nama lengkap">
+        </div>
+
+        <div class="form-group">
+            <label for="nip">NIP / ID Karyawan</label>
+            <input type="text" id="nip" placeholder="Masukkan NIP atau ID">
+        </div>
+
+        <div class="form-group">
+            <label for="jabatan">Jabatan</label>
+            <input type="text" id="jabatan" placeholder="Masukkan jabatan">
+        </div>
+
+        <button onclick="generateQR()">Buat QR Code</button>
+
+        <div id="qrcode-container">
+            <div id="qrcode"></div>
+            <div class="qr-info" id="qr-info"></div>
+            <div class="qr-url" id="qr-url"></div>
+            <button class="btn-download" onclick="downloadQR()">Download QR Code</button>
+        </div>
+
+        <div class="nav-link">
+            <a href="index.html">Ke Halaman Scanner</a>
+        </div>
+
+        <p class="help-text">
+            QR Code yang dihasilkan berisi URL langsung ke halaman absensi.<br>
+            Saat di-scan dengan kamera HP, halaman absensi akan langsung terbuka.
+        </p>
+    </div>
+
+    <script>
+        var qrcode = null;
+
+        function getBaseUrl() {
+            // Otomatis detect base URL dari halaman saat ini
+            var loc = window.location;
+            var path = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
+            return loc.protocol + '//' + loc.host + path;
+        }
+
+        function generateQR() {
+            var nama = document.getElementById('nama').value.trim();
+            var nip = document.getElementById('nip').value.trim();
+            var jabatan = document.getElementById('jabatan').value.trim();
+
+            if (!nama || !nip) {
+                alert('Nama dan NIP wajib diisi!');
+                return;
+            }
+
+            // Buat URL ke halaman index.html dengan parameter
+            var baseUrl = getBaseUrl();
+            var absenUrl = baseUrl + 'index.html?nama=' + encodeURIComponent(nama)
+                + '&nip=' + encodeURIComponent(nip)
+                + '&jabatan=' + encodeURIComponent(jabatan);
+
+            var qrcodeDiv = document.getElementById('qrcode');
+            var container = document.getElementById('qrcode-container');
+
+            // Hapus QR code sebelumnya
+            qrcodeDiv.innerHTML = '';
+            if (qrcode) qrcode = null;
+
+            // Buat QR code baru dengan URL
+            qrcode = new QRCode(qrcodeDiv, {
+                text: absenUrl,
+                width: 256,
+                height: 256,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            // Tampilkan info
+            document.getElementById('qr-info').innerHTML =
+                '<strong>Nama:</strong> ' + nama + '<br>' +
+                '<strong>NIP:</strong> ' + nip + '<br>' +
+                (jabatan ? '<strong>Jabatan:</strong> ' + jabatan : '');
+
+            document.getElementById('qr-url').innerText = 'URL: ' + absenUrl;
+
+            container.style.display = 'block';
+        }
+
+        function downloadQR() {
+            var canvas = document.querySelector('#qrcode canvas');
+            if (canvas) {
+                var link = document.createElement('a');
+                var nip = document.getElementById('nip').value.trim();
+                link.download = 'qr-absensi-' + nip + '.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            }
+        }
+    </script>
+</body>
+</html>

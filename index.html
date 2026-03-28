@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scanner Absen QR</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: #f4f4f9;
+            padding: 20px;
+        }
+        h2 { color: #333; margin-bottom: 15px; }
+        #reader { width: 300px; border: 10px solid #fff; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            background: #fff;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .result.sukses { border-left: 5px solid #27ae60; }
+        .result-detail { text-align: left; margin-top: 10px; line-height: 1.8; font-size: 14px; color: #555; }
+        .result-detail strong { color: #333; }
+        .waktu { margin-top: 8px; font-size: 13px; color: #888; }
+        .nav-link { margin-top: 20px; }
+        .nav-link a { color: #4a90d9; text-decoration: none; font-weight: 600; }
+        .nav-link a:hover { text-decoration: underline; }
+
+        /* Mode absen (ketika dibuka dari QR) */
+        .absen-card {
+            background: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 420px;
+            width: 90%;
+        }
+        .absen-card.sukses { border-top: 5px solid #27ae60; }
+        .absen-card h2 { color: #27ae60; margin-bottom: 10px; }
+        .absen-card .detail { text-align: left; background: #f0f7ff; padding: 15px; border-radius: 8px; line-height: 2; font-size: 14px; margin-top: 15px; }
+    </style>
+</head>
+<body>
+
+    <!-- Mode 1: Halaman absen (dibuka dari scan QR) -->
+    <div id="absen-mode" style="display:none;">
+        <div class="absen-card sukses">
+            <h2>Absensi Berhasil!</h2>
+            <p style="color:#555;">Data absensi Anda telah tercatat</p>
+            <div class="detail" id="absen-detail"></div>
+            <p class="waktu" id="absen-waktu"></p>
+        </div>
+        <div class="nav-link">
+            <a href="index.html">Ke Halaman Scanner</a> |
+            <a href="generate-qr.html">Generate QR Code</a>
+        </div>
+    </div>
+
+    <!-- Mode 2: Scanner (default) -->
+    <div id="scanner-mode">
+        <h2>Scan QR Code Absensi</h2>
+        <div id="reader"></div>
+
+        <div class="result" id="result-box">
+            <strong>Hasil Scan:</strong>
+            <p id="output">Menunggu pemindaian...</p>
+        </div>
+
+        <div class="nav-link">
+            <a href="generate-qr.html">Generate QR Code</a>
+        </div>
+    </div>
+
+    <script>
+        // Cek apakah halaman dibuka dari QR code (ada parameter di URL)
+        var params = new URLSearchParams(window.location.search);
+        var nama = params.get('nama');
+        var nip = params.get('nip');
+        var jabatan = params.get('jabatan');
+
+        if (nama && nip) {
+            // Mode Absen - dibuka dari QR code
+            document.getElementById('scanner-mode').style.display = 'none';
+            document.getElementById('absen-mode').style.display = 'flex';
+            document.getElementById('absen-mode').style.flexDirection = 'column';
+            document.getElementById('absen-mode').style.alignItems = 'center';
+            document.getElementById('absen-mode').style.gap = '20px';
+
+            var now = new Date();
+            var waktu = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+                + ' - ' + now.toLocaleTimeString('id-ID');
+
+            document.getElementById('absen-detail').innerHTML =
+                '<strong>Nama:</strong> ' + decodeURIComponent(nama) + '<br>' +
+                '<strong>NIP:</strong> ' + decodeURIComponent(nip) + '<br>' +
+                (jabatan ? '<strong>Jabatan:</strong> ' + decodeURIComponent(jabatan) + '<br>' : '') +
+                '<strong>Waktu:</strong> ' + waktu;
+
+            document.getElementById('absen-waktu').innerText = 'Tercatat pada: ' + waktu;
+        } else {
+            // Mode Scanner
+            var sudahScan = false;
+
+            function onScanSuccess(decodedText, decodedResult) {
+                if (sudahScan) return;
+                sudahScan = true;
+
+                var data = null;
+                var resultBox = document.getElementById('result-box');
+                var output = document.getElementById('output');
+
+                // Coba parse sebagai URL dengan parameter
+                try {
+                    var url = new URL(decodedText);
+                    var p = url.searchParams;
+                    if (p.get('nama') && p.get('nip')) {
+                        data = {
+                            nama: p.get('nama'),
+                            nip: p.get('nip'),
+                            jabatan: p.get('jabatan') || '-'
+                        };
+                    }
+                } catch(e) {}
+
+                // Kalau bukan URL, coba parse sebagai JSON
+                if (!data) {
+                    try {
+                        data = JSON.parse(decodedText);
+                    } catch(e) {}
+                }
+
+                if (data && data.nama && data.nip) {
+                    var now = new Date();
+                    var waktu = now.toLocaleTimeString('id-ID');
+                    resultBox.classList.add('sukses');
+                    output.innerHTML =
+                        '<div class="result-detail">' +
+                        '<strong>Nama:</strong> ' + data.nama + '<br>' +
+                        '<strong>NIP:</strong> ' + data.nip + '<br>' +
+                        '<strong>Jabatan:</strong> ' + (data.jabatan || '-') + '<br>' +
+                        '<strong>Waktu:</strong> ' + waktu +
+                        '</div>';
+                } else {
+                    output.innerText = 'Data: ' + decodedText;
+                }
+
+                // Reset setelah 5 detik agar bisa scan lagi
+                setTimeout(function() {
+                    sudahScan = false;
+                    resultBox.classList.remove('sukses');
+                    output.innerText = 'Menunggu pemindaian...';
+                }, 5000);
+            }
+
+            function onScanFailure(error) {}
+
+            var html5QrcodeScanner = new Html5QrcodeScanner(
+                "reader", { fps: 10, qrbox: 250 });
+            html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+        }
+    </script>
+</body>
+</html>
